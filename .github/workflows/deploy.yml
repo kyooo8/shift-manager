@@ -33,7 +33,6 @@ jobs:
           project: "shift-manager"
           entrypoint: "main.ts"
           root: "."
-<<<<<<< HEAD
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -43,5 +42,3 @@ jobs:
           GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
           PORT: ${{ secrets.PORT }}
         run: deno task build
-=======
->>>>>>> 135b06e78765b70431b78dc39b7d9d486b81ae57
