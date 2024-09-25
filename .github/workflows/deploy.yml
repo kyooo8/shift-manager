@@ -24,6 +24,7 @@ jobs:
           deno-version: v1.x
 
       - name: Build step
+<<<<<<< HEAD
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -33,6 +34,9 @@ jobs:
           GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
           PORT: ${{ secrets.PORT }}
         run: deno task build
+=======
+        run: "deno task build"
+>>>>>>> 72dd7d24a7e9bd810fee90aef05a81e24deea185
 
       - name: Upload to Deno Deploy
         uses: denoland/deployctl@v1
@@ -40,6 +44,7 @@ jobs:
           project: "shift-manager"
           entrypoint: "main.ts"
           root: "."
+<<<<<<< HEAD
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -48,3 +53,5 @@ jobs:
           GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
           GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
           PORT: ${{ secrets.PORT }}
+=======
+>>>>>>> 72dd7d24a7e9bd810fee90aef05a81e24deea185
