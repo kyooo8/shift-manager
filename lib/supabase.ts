@@ -2,7 +2,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
 import "$std/dotenv/load.ts";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL");
+// const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseUrl = "https://mfzcsojkjhbncuixqffq.supabase.co";
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
 if (!supabaseUrl) {
