@@ -1,0 +1,10 @@
+{
+    "functions": {
+        "api/**/*.ts": {
+            "runtime": "deno"
+        }
+    },
+    "rewrites": [
+        { "source": "/(.*)", "destination": "/api/index.ts" }
+    ]
+}
