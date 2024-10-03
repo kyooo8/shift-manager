@@ -1,4 +1,4 @@
-//routes/api/callback.ts
+// routes/api/callback.ts
 import { supabase } from "../../lib/supabase.ts";
 
 export async function handler(req: Request): Promise<Response> {
@@ -73,15 +73,30 @@ export async function handler(req: Request): Promise<Response> {
   const userInfo = await userInfoResponse.json();
   const googleUserId = userInfo.sub; // OpenID Connect では "sub" がユーザーID
 
-  // 新規ユーザーを登録
-  await saveUserIfNew(googleUserId, userInfo);
+  // ユーザーの存在を確認
+  const { data: existingUser, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", googleUserId)
+    .single();
+
+  if (!existingUser) {
+    // 新規ユーザーを登録
+    await saveUser(googleUserId, userInfo);
+  }
+
+  // リフレッシュトークンを保存または更新
   await saveRefreshToken(googleUserId, refreshToken);
 
-  // クッキーにアクセストークンを設定
+  // クッキーにアクセストークンとユーザーIDを設定
   const headers = new Headers();
   headers.append(
     "Set-Cookie",
     `accessToken=${accessToken}; Path=/; HttpOnly; SameSite=Lax;`,
+  );
+  headers.append(
+    "Set-Cookie",
+    `googleUserId=${googleUserId}; Path=/; HttpOnly; SameSite=Lax;`,
   );
   headers.append("Location", "/list");
 
@@ -92,35 +107,26 @@ export async function handler(req: Request): Promise<Response> {
   });
 }
 
-// 既存の関数はそのまま
+// ユーザーをデータベースに保存する関数
+async function saveUser(googleUserId: string, userInfo: any) {
+  const { error } = await supabase.from("users").insert({
+    id: googleUserId,
+    name: userInfo.name,
+  });
 
-// 新しいユーザーをデータベースに保存する関数
-async function saveUserIfNew(googleUserId: string, userInfo: any) {
-  const { data, error } = await supabase
-    .from("users")
-    .select("id")
-    .eq("id", googleUserId)
-    .single();
-
-  if (!data && !error) {
-    const { error: insertError } = await supabase.from("users").insert({
-      id: googleUserId,
-      name: userInfo.name,
-    });
-
-    if (insertError) {
-      console.log("ユーザーの作成に失敗しました:", insertError);
-    }
+  if (error) {
+    console.error("ユーザーの作成に失敗しました:", error);
   }
 }
 
-// リフレッシュトークンを保存する関数
+// リフレッシュトークンを保存または更新する関数
 async function saveRefreshToken(googleUserId: string, refreshToken: string) {
   const { error } = await supabase
     .from("users")
-    .upsert({ id: googleUserId, refresh_token: refreshToken });
+    .update({ refresh_token: refreshToken })
+    .eq("id", googleUserId);
 
   if (error) {
-    console.error("Supabaseへの保存中にエラーが発生しました:", error);
+    console.error("リフレッシュトークンの保存に失敗しました:", error);
   }
 }

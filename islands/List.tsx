@@ -22,6 +22,28 @@ export function List() {
   const [updateDate, setUpdateDate] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const response = await fetch("/api/getUserName", {
+          credentials: "include",
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setUserName(data.name);
+        } else {
+          console.error(data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching user name:", error);
+      }
+    };
+
+    fetchUserName();
+  }, []);
+
   const fetchTotalHours = async (update = false) => {
     setLoading(true);
     setError(null);
@@ -33,17 +55,44 @@ export function List() {
         });
       }
 
-      const response = await fetch(`/api/getHours?month=${selectedMonth}`, {
+      let response = await fetch(`/api/getHours?month=${selectedMonth}`, {
         credentials: "include",
       });
 
-      const data = await response.json();
-      setHoursByName(data.hoursByName);
-      if (data.updateDate) {
-        const formatedDate = formatDate(data.updateDate);
-        setUpdateDate(formatedDate);
+      if (response.status === 401) {
+        // アクセストークンをリフレッシュ
+        const refreshResponse = await fetch("/api/refreshAccessToken", {
+          method: "POST",
+          credentials: "include",
+        });
+
+        if (refreshResponse.ok) {
+          // 再度データを取得
+          response = await fetch(`/api/getHours?month=${selectedMonth}`, {
+            credentials: "include",
+          });
+        } else {
+          throw new Error(
+            "セッションの有効期限が切れました。再ログインしてください。",
+          );
+        }
       }
 
+      if (!response.ok) {
+        throw new Error("データの取得に失敗しました。");
+      }
+
+      const data = await response.json();
+
+      // 取得したデータを状態に設定
+      setHoursByName(data.hoursByName);
+
+      if (data.updateDate) {
+        const formattedDate = formatDate(data.updateDate);
+        setUpdateDate(formattedDate);
+      }
+
+      // 合計時間を計算して状態に設定
       const totalHours: number = Object.values(data.hoursByName).reduce<number>(
         (sum, hours) => sum + (hours as number),
         0,
@@ -53,7 +102,7 @@ export function List() {
       setHoursByName({});
       setTotal(0);
       setUpdateDate("");
-      setError("データがありません");
+      setError(error.message || "データがありません");
       console.error("Error fetching total hours:", error);
     } finally {
       setLoading(false);
@@ -90,6 +139,14 @@ export function List() {
           最新データ取得
         </button>
         <div class="flex">
+          <button
+            class="mr-6 p-2 border border-gray-100 rounded-md hover:bg-gray-100 shadow bg-gray-50"
+            onClick={() => {
+              window.location.href = "/profile";
+            }}
+          >
+            {userName}さん
+          </button>
           <button
             class="mr-3 p-2 border border-gray-100 rounded-md hover:bg-gray-100 shadow bg-gray-50"
             onClick={handleLogout}

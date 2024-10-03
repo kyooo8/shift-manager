@@ -1,7 +1,8 @@
+// routes/api/login.ts
 export function handler(req: Request): Response {
   const clientId = Deno.env.get("GOOGLE_CLIENT_ID")!;
   const redirectUrl = Deno.env.get("REDIRECT_URL") ||
-    "http://localhost:8000/api/callback"; // 環境変数から取得
+    "http://localhost:8000/api/callback";
   const scope = [
     "https://www.googleapis.com/auth/calendar",
     "https://www.googleapis.com/auth/userinfo.profile",
