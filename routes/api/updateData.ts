@@ -1,3 +1,4 @@
+//api/updateData
 import { HandlerContext } from "$fresh/server.ts";
 import { supabase } from "../../lib/supabase.ts";
 

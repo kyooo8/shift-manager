@@ -1,3 +1,4 @@
+//interface/EmployeeData
 interface ShiftDetail {
   start: string;
   end: string;

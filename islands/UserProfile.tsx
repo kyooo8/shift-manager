@@ -1,5 +1,7 @@
+//islands/UserProfile
 import { useEffect, useState } from "preact/hooks";
 import { Calendar } from "../interface/Calendar.ts";
+import { COLOR_OPTIONS } from "../colors.ts";
 
 export default function UserProfile() {
     const [calendars, setCalendars] = useState<Calendar[]>([]);
@@ -21,12 +23,7 @@ export default function UserProfile() {
                 if (!response.ok) {
                     throw new Error(`Error: ${response.status}`);
                 }
-                const calendarsArray: Calendar[] = (await response.json()).map((
-                    calendar: Calendar,
-                ) => ({
-                    ...calendar,
-                    uniqueId: crypto.randomUUID(),
-                }));
+                const calendarsArray: Calendar[] = await response.json(); // ここでサーバーから取得したuniqueIdをそのまま使う
                 setCalendars(calendarsArray);
             } catch (error) {
                 console.error(
@@ -65,7 +62,7 @@ export default function UserProfile() {
                 uniqueId: "",
                 id: "",
                 name: "",
-                color: "#ffffff",
+                color: COLOR_OPTIONS[0].value,
             });
             setSuccessMessage("カレンダーが正常に追加されました。");
             setErrorMessage(null);
@@ -101,6 +98,15 @@ export default function UserProfile() {
             if (!response.ok) {
                 throw new Error(`Error: ${response.status}`);
             }
+            const updatedCalendar = await response.json(); // サーバーから返された更新データを取得
+
+            // 前の状態を参照しつつ、更新されたカレンダーだけを反映
+            setCalendars((prevCalendars) => {
+                const newCalendars = [...prevCalendars];
+                newCalendars[index] = updatedCalendar;
+                return newCalendars;
+            });
+
             setSuccessMessage("カレンダーが正常に更新されました。");
             setErrorMessage(null);
         } catch (error) {
@@ -171,8 +177,7 @@ export default function UserProfile() {
                 </div>
                 <div class="flex items-center mt-2">
                     <label class="mr-2">色:</label>
-                    <input
-                        type="color"
+                    <select
                         class="flex-1"
                         value={newCalendar.color}
                         onChange={(e) =>
@@ -180,13 +185,23 @@ export default function UserProfile() {
                                 ...newCalendar,
                                 color: e.currentTarget.value,
                             })}
-                    />
+                    >
+                        {COLOR_OPTIONS.map((colorOption) => (
+                            <option
+                                key={colorOption.value}
+                                value={colorOption.value}
+                            >
+                                {colorOption.label}
+                            </option>
+                        ))}
+                    </select>
                 </div>
                 <button class="mt-2" onClick={addCalendar}>
                     追加
                 </button>
             </div>
 
+            {/* 既存のカレンダーリスト表示 */}
             <ul class="w-2/3 mx-auto">
                 {calendars.map((calendar, index) => (
                     <li
@@ -226,8 +241,7 @@ export default function UserProfile() {
                                 </div>
                                 <div class="flex items-center mt-2">
                                     <label class="mr-2">色:</label>
-                                    <input
-                                        type="color"
+                                    <select
                                         class="flex-1"
                                         value={calendar.color}
                                         onChange={(e) =>
@@ -236,7 +250,16 @@ export default function UserProfile() {
                                                 "color",
                                                 e.currentTarget.value,
                                             )}
-                                    />
+                                    >
+                                        {COLOR_OPTIONS.map((colorOption) => (
+                                            <option
+                                                key={colorOption.value}
+                                                value={colorOption.value}
+                                            >
+                                                {colorOption.label}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                                 <button
                                     class="mt-2"

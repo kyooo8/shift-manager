@@ -15,7 +15,6 @@ import * as $api_login from "./routes/api/login.ts";
 import * as $api_logout from "./routes/api/logout.ts";
 import * as $api_refreshAccessToken from "./routes/api/refreshAccessToken.ts";
 import * as $api_shifts from "./routes/api/shifts.ts";
-import * as $api_shiftsHandler from "./routes/api/shiftsHandler.ts";
 import * as $api_updateCalendar from "./routes/api/updateCalendar.ts";
 import * as $api_updateData from "./routes/api/updateData.ts";
 import * as $detail_name_ from "./routes/detail/[name].tsx";
@@ -43,7 +42,6 @@ const manifest = {
     "./routes/api/logout.ts": $api_logout,
     "./routes/api/refreshAccessToken.ts": $api_refreshAccessToken,
     "./routes/api/shifts.ts": $api_shifts,
-    "./routes/api/shiftsHandler.ts": $api_shiftsHandler,
     "./routes/api/updateCalendar.ts": $api_updateCalendar,
     "./routes/api/updateData.ts": $api_updateData,
     "./routes/detail/[name].tsx": $detail_name_,

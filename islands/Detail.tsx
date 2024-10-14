@@ -1,3 +1,4 @@
+//islands/Detail
 import DetailProps from "../interface/DetailProps.ts";
 
 export default function Detail({

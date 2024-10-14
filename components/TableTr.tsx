@@ -1,20 +1,33 @@
-interface Props {
+// components/TableTr.tsx
+
+interface TableTrProps {
     name: string;
-    hours: number;
+    totalHours: number;
     selectedMonth: number;
+    color: string;
+    calendarId: string;
 }
 
-export function TableTr({ name, selectedMonth, hours }: Props) {
+export const TableTr = (
+    { name, totalHours, selectedMonth, color, calendarId }: TableTrProps,
+) => {
     return (
-        <tr
-            class="text-center cursor-pointer hover:bg-gray-100"
-            key={name}
-            onClick={() => (window.location.href = `/detail/${
-                encodeURIComponent(name)
-            }?month=${selectedMonth}`)}
-        >
-            <td class="p-2 border-r border-b border-gray-100">{name}</td>
-            <td class="p-2 border-b border-gray-100">{hours}時間</td>
+        <tr>
+            <td
+                class="p-2 border-r border-gray-100"
+                style={{ color: `${color}` }}
+            >
+                <a
+                    href={`/detail/${name}?month=${selectedMonth}&calendarId=${calendarId}`}
+                >
+                    {name}
+                </a>
+            </td>
+            <td class="p-2">
+                <a href={`/detail/${name}?month=${selectedMonth}`}>
+                    {totalHours}時間
+                </a>
+            </td>
         </tr>
     );
-}
+};

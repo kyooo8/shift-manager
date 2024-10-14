@@ -1,3 +1,4 @@
+//routes/api/deleteCalendar
 import { FreshContext } from "$fresh/server.ts";
 import { Calendar } from "../../interface/Calendar.ts";
 import { supabase } from "../../lib/supabase.ts";

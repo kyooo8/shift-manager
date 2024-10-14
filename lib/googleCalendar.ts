@@ -1,108 +1,61 @@
-//lib/googleCalendar.ts
-import EmployeeData from "../interface/EmployeeData.ts";
+// lib/googleCalendar.ts
 
-const CALENDAR_ID = Deno.env.get("GOOGLE_CALENDAR_ID")!;
-const GOOGLE_API_BASE_URL = "https://www.googleapis.com/calendar/v3";
+export interface ShiftDetail {
+  start: string; // ISO形式の開始時間
+  end: string; // ISO形式の終了時間
+  hours: number; // 勤務時間
+}
 
-export async function getTotalHours(
+export interface EmployeeHourDetail {
+  totalHours: number;
+  details: ShiftDetail[];
+}
+
+export const getTotalHours = async (
   accessToken: string,
   timeMin: string,
   timeMax: string,
-): Promise<Record<string, EmployeeData>> {
-  const results: Record<string, EmployeeData> = {};
-  let pageToken: string | undefined = undefined;
-
-  console.log("Access Token:", accessToken);
-  console.log("Time Min:", timeMin);
-  console.log("Time Max:", timeMax);
-
-  do {
-    const url = new URL(
-      `${GOOGLE_API_BASE_URL}/calendars/${
-        encodeURIComponent(CALENDAR_ID)
-      }/events`,
-    );
-    url.searchParams.set("timeMin", timeMin);
-    url.searchParams.set("timeMax", timeMax);
-    url.searchParams.set("maxResults", "2500");
-    url.searchParams.set("singleEvents", "true");
-    url.searchParams.set("orderBy", "startTime");
-    if (pageToken) {
-      url.searchParams.set("pageToken", pageToken);
-    }
-
-    console.log("Request URL:", url.toString());
-
-    const response = await fetch(url.toString(), {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
+  calendarIds: string[],
+): Promise<{ [name: string]: EmployeeHourDetail }> => {
+  const fetchPromises = calendarIds.map((calendarId) =>
+    fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${
+        encodeURIComponent(calendarId)
+      }/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+      {
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+        },
       },
+    ).then((response) => response.json())
+  );
+
+  const eventsArrays = await Promise.all(fetchPromises);
+
+  const hoursByName: { [name: string]: EmployeeHourDetail } = {};
+
+  eventsArrays.forEach((events) => {
+    events.items.forEach((event: any) => {
+      const name = event.summary; // イベントのタイトルを従業員名と仮定
+      if (name && name.includes("募集")) {
+        return;
+      }
+      const start = event.start.dateTime || event.start.date;
+      const end = event.end.dateTime || event.end.date;
+
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      const duration = (endDate.getTime() - startDate.getTime()) /
+        (1000 * 60 * 60); // 時間単位
+
+      if (!hoursByName[name]) {
+        hoursByName[name] = { totalHours: 0, details: [] };
+      }
+
+      hoursByName[name].totalHours += duration;
+      hoursByName[name].details.push({ start, end, hours: duration });
     });
+  });
 
-    console.log("Response Status:", response.status);
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("Failed to fetch events:", error);
-      throw new Error(`Failed to fetch events: ${error}`);
-    }
-
-    const data = await response.json();
-    console.log("Data received:", JSON.stringify(data, null, 2));
-
-    const events = data.items || [];
-    console.log("Number of events fetched:", events.length);
-
-    for (const event of events) {
-      const summary = event.summary || "";
-      console.log("Event Summary:", summary);
-
-      const name = summary.split(" ")[0];
-      console.log("Extracted Name:", name);
-
-      // 名前が空、null、またはerrorという名前の場合、スキップ
-      if (!name || name === "error" || summary.includes("★募集")) {
-        console.log("Skipping event due to invalid name or summary.");
-        continue;
-      }
-
-      const startDate = event.start?.dateTime || event.start?.date;
-      const endDate = event.end?.dateTime || event.end?.date;
-
-      console.log("Start Date:", startDate);
-      console.log("End Date:", endDate);
-
-      if (!startDate || !endDate) {
-        console.log("Skipping event due to missing start or end date.");
-        continue;
-      }
-
-      const start = new Date(startDate).toISOString();
-      const end = new Date(endDate).toISOString();
-      const hours = (new Date(end).getTime() - new Date(start).getTime()) /
-        (1000 * 60 * 60);
-
-      console.log("Calculated Hours:", hours);
-
-      if (!results[name]) {
-        results[name] = { totalHours: 0, details: [] };
-        console.log(`Created new entry for ${name}.`);
-      }
-
-      results[name].totalHours += hours;
-      results[name].details.push({ start, end, hours });
-
-      console.log(
-        `Updated total hours for ${name}:`,
-        results[name].totalHours,
-      );
-    }
-
-    pageToken = data.nextPageToken || undefined;
-    console.log("Next Page Token:", pageToken);
-  } while (pageToken);
-
-  console.log("Final Results:", JSON.stringify(results, null, 2));
-
-  return results;
-}
+  return hoursByName;
+};

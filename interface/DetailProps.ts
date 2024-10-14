@@ -1,3 +1,4 @@
+//interface/DetailProps
 export default interface DetailProps {
     name: string;
     details: ShiftDetail[];
