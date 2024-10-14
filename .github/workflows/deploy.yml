@@ -29,6 +29,6 @@ jobs:
       - name: Upload to Deno Deploy
         uses: denoland/deployctl@v1
         with:
-          project: "kyooo8-shift-manag-74"
+          project: "shift-manager"
           entrypoint: "main.ts"
           root: "."
