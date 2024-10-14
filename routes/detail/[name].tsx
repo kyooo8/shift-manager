@@ -1,3 +1,4 @@
+//detail/[name]
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Detail from "../../islands/Detail.tsx";
 import { supabase } from "../../lib/supabase.ts";
@@ -9,9 +10,11 @@ export const handler: Handlers = {
         const url = new URL(req.url);
         const month = url.searchParams.get("month") ||
             String(new Date().getMonth() + 1);
-
+        const calendarId = url.searchParams.get("calendarId");
         const year = new Date().getFullYear();
-        const docId = `${year}-${month}-${decodedName}`;
+        const monthInt = Number(month);
+
+        const docId = `${year}-${monthInt}-${calendarId}-${decodedName}`;
         console.log(docId);
 
         const { data, error } = await supabase.from("employee_hours").select(
