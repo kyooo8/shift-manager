@@ -1,8 +1,8 @@
 import { useState } from "preact/hooks";
 
 export function Profile() {
+    const [error, setError] = useState<string | null>(null);
     const handleLogout = async () => {
-        const [error, setError] = useState<string | null>(null);
         try {
             const response = await fetch("/api/logout", {
                 method: "POST",
