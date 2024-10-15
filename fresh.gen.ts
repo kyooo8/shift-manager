@@ -20,12 +20,14 @@ import * as $api_updateData from "./routes/api/updateData.ts";
 import * as $detail_name_ from "./routes/detail/[name].tsx";
 import * as $index from "./routes/index.tsx";
 import * as $login from "./routes/login.tsx";
+import * as $profile from "./routes/profile.tsx";
 import * as $setting from "./routes/setting.tsx";
 import * as $CalendarSetting from "./islands/CalendarSetting.tsx";
 import * as $Detail from "./islands/Detail.tsx";
 import * as $Header from "./islands/Header.tsx";
 import * as $List from "./islands/List.tsx";
 import * as $Login from "./islands/Login.tsx";
+import * as $Profile from "./islands/Profile.tsx";
 import { type Manifest } from "$fresh/server.ts";
 
 const manifest = {
@@ -48,6 +50,7 @@ const manifest = {
     "./routes/detail/[name].tsx": $detail_name_,
     "./routes/index.tsx": $index,
     "./routes/login.tsx": $login,
+    "./routes/profile.tsx": $profile,
     "./routes/setting.tsx": $setting,
   },
   islands: {
@@ -56,6 +59,7 @@ const manifest = {
     "./islands/Header.tsx": $Header,
     "./islands/List.tsx": $List,
     "./islands/Login.tsx": $Login,
+    "./islands/Profile.tsx": $Profile,
   },
   baseUrl: import.meta.url,
 } satisfies Manifest;

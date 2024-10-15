@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 
-export const UserName = () => {
+export const HeaderItem = () => {
     const [userName, setUserName] = useState("");
     const [error, setError] = useState<string | null>(null);
     const fetchUserName = async () => {
@@ -24,38 +24,20 @@ export const UserName = () => {
         fetchUserName();
     }, []);
 
-    const handleLogout = async () => {
-        try {
-            const response = await fetch("/api/logout", {
-                method: "POST",
-                credentials: "include",
-            });
-            if (response.ok) {
-                window.location.href = "/login";
-            } else {
-                console.error("Logout failed.");
-                setError("ログアウトに失敗しました。");
-            }
-        } catch (error) {
-            console.error("Error logging out:", error);
-            setError("ログアウト中にエラーが発生しました。");
-        }
-    };
-
     return (
         <>
             {userName
                 ? (
                     <div>
-                        <span class="text-sm mr-3">
+                        <span
+                            class="text-sm mr-3"
+                            onClick={() => {
+                                window.location.href = "/profile";
+                            }}
+                        >
                             {userName}さん
                         </span>
-                        <button
-                            class="text-sm mr-3"
-                            onClick={handleLogout}
-                        >
-                            ログアウト
-                        </button>
+
                         <button
                             class="text-sm"
                             onClick={() => {

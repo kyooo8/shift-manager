@@ -64,7 +64,7 @@ export default function CalendarSetting() {
             await getCalendars();
             setSuccessMessage("カレンダーが正常に追加されました。");
             setErrorMessage(null);
-            setTimeout(() => setSuccessMessage(null), 3000); // 3秒後に消える
+            setTimeout(() => setSuccessMessage(null), 4000); // 3秒後に消える
         } catch (error) {
             console.error("カレンダーの追加中にエラーが発生しました:", error);
             setErrorMessage("カレンダーの追加に失敗しました。");
@@ -103,7 +103,7 @@ export default function CalendarSetting() {
             await getCalendars();
             setSuccessMessage("カレンダーが正常に更新されました。");
             setErrorMessage(null);
-            setTimeout(() => setSuccessMessage(null), 30000);
+            setTimeout(() => setSuccessMessage(null), 4000);
         } catch (error) {
             console.error("カレンダーの更新中にエラーが発生しました:", error);
             setErrorMessage("カレンダーの更新に失敗しました。");
@@ -130,7 +130,7 @@ export default function CalendarSetting() {
             }
             await getCalendars();
             setSuccessMessage("カレンダーが正常に削除されました。");
-            setTimeout(() => setSuccessMessage(null), 3000);
+            setTimeout(() => setSuccessMessage(null), 4000);
         } catch (error) {
             console.error("カレンダーの削除中にエラーが発生しました:", error);
             setErrorMessage("カレンダーの削除に失敗しました。");
@@ -154,7 +154,7 @@ export default function CalendarSetting() {
         <div class="w-full relative">
             {errorMessage && (
                 <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50">
-                    <p class="absolute top-4 left-1/2 transform -translate-x-1/2 text-red-600 bg-white p-2 rounded shadow-md">
+                    <p class="relative  text-red-600 bg-white p-2 rounded shadow-md">
                         {errorMessage}
                     </p>
                 </div>
@@ -173,7 +173,7 @@ export default function CalendarSetting() {
                     <label class="mr-2">名前:</label>
                     <input
                         type="text"
-                        class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-2"
+                        class="bg-gray-50 border border-gray-300 rounded-lg px-2 w-2/3"
                         value={newCalendar.name}
                         onChange={(e) =>
                             setNewCalendar({
@@ -186,7 +186,7 @@ export default function CalendarSetting() {
                     <label class="mr-2">ID:</label>
                     <input
                         type="text"
-                        class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-2"
+                        class="flex-1 bg-gray-50 border border-gray-300 rounded-lg px-2 w-2/3"
                         value={newCalendar.id}
                         placeholder="GoogleカレンダーのカレンダーIDを入力"
                         onChange={(e) =>
@@ -246,7 +246,7 @@ export default function CalendarSetting() {
                                         <label class="mr-2">名前:</label>
                                         <input
                                             type="text"
-                                            class="flex-1 bg-white bg-opacity-40 px-1 rounded shadow-sm"
+                                            class="flex-1 bg-white bg-opacity-40 px-1 rounded shadow-sm w-2/3"
                                             value={calendar.name}
                                             onChange={(e) =>
                                                 handleCalendarChange(
@@ -259,7 +259,7 @@ export default function CalendarSetting() {
                                     <div class="flex items-center mt-2">
                                         <label class="mr-2">色:</label>
                                         <select
-                                            class="flex-1 bg-white bg-opacity-40 px-1 rounded shadow-sm"
+                                            class="flex-1 bg-white bg-opacity-40 px-1 rounded shadow-sm "
                                             value={calendar.color}
                                             onChange={(e) =>
                                                 handleCalendarChange(
