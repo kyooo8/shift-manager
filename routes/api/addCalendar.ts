@@ -30,6 +30,26 @@ export const handler = async (req: Request): Promise<Response> => {
     const newCalendar: Calendar = await req.json();
 
     try {
+        // 必須フィールドのチェック
+        if (!newCalendar.id || !newCalendar.name || !newCalendar.color) {
+            return new Response(
+                JSON.stringify({ error: "Invalid calendar data" }),
+                {
+                    status: 400,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
+        }
+
+        // uniqueId をサーバー側で生成
+        const uniqueId = crypto.randomUUID();
+
+        // 新しいカレンダーオブジェクト
+        const calendarToAdd = {
+            ...newCalendar,
+            uniqueId,
+        };
+
         // 1. 既存のカレンダーを取得
         const { data: user, error: fetchError } = await supabase
             .from("users")
@@ -42,23 +62,24 @@ export const handler = async (req: Request): Promise<Response> => {
         const calendars = user?.calendars as Calendar[] || [];
 
         // 2. 新しいカレンダーを追加
-        calendars.push(newCalendar);
+        calendars.push(calendarToAdd);
 
         // 3. 更新されたカレンダーを保存
         const { data, error: updateError } = await supabase
             .from("users")
             .update({ calendars })
-            .eq("id", googleUserId);
+            .eq("id", googleUserId)
+            .select("calendars");
 
         if (updateError) throw updateError;
 
-        return new Response(JSON.stringify(data), {
+        return new Response(JSON.stringify(calendarToAdd), {
             status: 200,
             headers: { "Content-Type": "application/json" },
         });
     } catch (error) {
         console.error("Error adding calendar:", error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        return new Response(JSON.stringify({ error: error }), {
             status: 500,
             headers: { "Content-Type": "application/json" },
         });

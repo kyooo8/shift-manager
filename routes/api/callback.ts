@@ -98,7 +98,7 @@ export async function handler(req: Request): Promise<Response> {
     "Set-Cookie",
     `googleUserId=${googleUserId}; Path=/; HttpOnly; SameSite=Lax;`,
   );
-  headers.append("Location", "/list");
+  headers.append("Location", "/");
 
   // /listにリダイレクト
   return new Response(null, {

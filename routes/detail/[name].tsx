@@ -10,11 +10,16 @@ export const handler: Handlers = {
         const url = new URL(req.url);
         const month = url.searchParams.get("month") ||
             String(new Date().getMonth() + 1);
-        const calendarId = url.searchParams.get("calendarId");
+        const calendarUniqueId = url.searchParams.get("calendar_unique_id");
+        if (!calendarUniqueId) {
+            return ctx.render({
+                error: "カレンダーIDが指定されていません",
+            });
+        }
         const year = new Date().getFullYear();
         const monthInt = Number(month);
 
-        const docId = `${year}-${monthInt}-${calendarId}-${decodedName}`;
+        const docId = `${year}-${monthInt}-${calendarUniqueId}-${decodedName}`;
         console.log(docId);
 
         const { data, error } = await supabase.from("employee_hours").select(

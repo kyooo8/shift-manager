@@ -5,28 +5,27 @@ interface TableTrProps {
     totalHours: number;
     selectedMonth: number;
     color: string;
-    calendarId: string;
+    calendarUniqueId: string;
 }
 
 export const TableTr = (
-    { name, totalHours, selectedMonth, color, calendarId }: TableTrProps,
+    { name, totalHours, selectedMonth, color, calendarUniqueId }: TableTrProps,
 ) => {
     return (
-        <tr>
+        <tr
+            onClick={() => {
+                window.location.href =
+                    `/detail/${name}?month=${selectedMonth}&calendar_unique_id=${calendarUniqueId}`;
+            }}
+        >
             <td
-                class="p-2 border-r border-gray-100"
+                class="p-2 border-r border-gray-100 truncate ... w-1/2 text-center"
                 style={{ color: `${color}` }}
             >
-                <a
-                    href={`/detail/${name}?month=${selectedMonth}&calendarId=${calendarId}`}
-                >
-                    {name}
-                </a>
+                {name}
             </td>
-            <td class="p-2">
-                <a href={`/detail/${name}?month=${selectedMonth}`}>
-                    {totalHours}時間
-                </a>
+            <td class="p-2 w-1/2 truncate ... text-center">
+                {totalHours}時間
             </td>
         </tr>
     );

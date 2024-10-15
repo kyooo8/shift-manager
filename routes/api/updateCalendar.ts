@@ -30,7 +30,21 @@ export const handler = async (req: Request): Promise<Response> => {
     const updatedCalendar: Calendar = await req.json();
 
     try {
-        // 1. 現在のカレンダー配列を取得
+        // 必須フィールドのチェック
+        if (
+            !updatedCalendar.uniqueId ||
+            !updatedCalendar.name || !updatedCalendar.color
+        ) {
+            return new Response(
+                JSON.stringify({ error: "Invalid calendar data" }),
+                {
+                    status: 400,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
+        }
+
+        // 既存のカレンダーを取得
         const { data: user, error: fetchError } = await supabase
             .from("users")
             .select("calendars")
@@ -41,26 +55,40 @@ export const handler = async (req: Request): Promise<Response> => {
 
         const calendars = user?.calendars as Calendar[] || [];
 
-        // 2. 特定のカレンダーを更新
+        // 特定のカレンダーを更新
         const updatedCalendars = calendars.map((calendar) =>
             calendar.uniqueId === updatedCalendar.uniqueId
-                ? updatedCalendar
+                ? { ...calendar, ...updatedCalendar } // nameとcolorのみ更新
                 : calendar
         );
 
-        // 3. カレンダー配列を更新
+        // 更新されたカレンダーを保存
         const { data, error: updateError } = await supabase
             .from("users")
             .update({ calendars: updatedCalendars })
-            .eq("id", googleUserId);
+            .eq("id", googleUserId)
+            .select("calendars");
 
         if (updateError) throw updateError;
 
-        return new Response(JSON.stringify(data), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        });
-    } catch (error) {
+        // 更新されたカレンダーを返す
+        const savedCalendar = updatedCalendars.find(
+            (cal) => cal.uniqueId === updatedCalendar.uniqueId,
+        );
+
+        return savedCalendar
+            ? new Response(JSON.stringify(savedCalendar), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+            })
+            : new Response(
+                JSON.stringify({ error: "Calendar not found after update" }),
+                {
+                    status: 404,
+                    headers: { "Content-Type": "application/json" },
+                },
+            );
+    } catch (error: any) {
         console.error("Error updating calendar:", error);
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,

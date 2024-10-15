@@ -9,6 +9,10 @@ export const handler = (req: Request) => {
         "Set-Cookie",
         "accessToken=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0", // クッキーを無効化
     );
+    headers.append(
+        "Set-Cookie",
+        "googleUserId=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0", // クッキーを無効化
+    );
 
     return new Response("ログアウト成功", {
         status: 200,
