@@ -2,6 +2,7 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Detail from "../../islands/Detail.tsx";
 import { supabase } from "../../lib/supabase.ts";
+import { Header } from "../../components/header.tsx";
 
 export const handler: Handlers = {
     async GET(req, ctx) {
@@ -49,14 +50,17 @@ export default function DetailPage(props: PageProps) {
         return <p>{error}</p>;
     }
 
+    const decodedName = decodeURIComponent(name);
+
     return (
-        <div class="w-full">
+        <>
+            <Header title={decodedName} />
             <Detail
                 name={name}
                 details={details}
                 totalHours={totalHours}
                 selectedMonth={selectedMonth}
             />
-        </div>
+        </>
     );
 }

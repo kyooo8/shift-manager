@@ -17,7 +17,7 @@ export default function Detail({
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
-        return `${date.getFullYear()}/${date.getMonth() + 1}/${
+        return `${date.getMonth() + 1}/${
             date
                 .getDate()
                 .toString()
@@ -37,16 +37,13 @@ export default function Detail({
 
     return (
         <div class="w-full mx-3">
-            <div class="flex justify-between mt-4">
-                <h1 class="text-2xl ml-3 font-bold">{decodedName}</h1>
+            <div class="flex justify-between mt-8 w-2/3 mx-auto">
                 <button
                     class="mr-3 p-2 border border-gray-100 rounded-md hover:bg-gray-100 shadow bg-gray-50"
                     onClick={() => history.back()}
                 >
                     戻る
-                </button>
-            </div>
-            <div class="mt-4 ml-3">
+                </button>{" "}
                 <label htmlFor="month">
                     <select
                         class="bg-gray-50 hover:bg-gray-100 p-2 border border-gray-100 rounded-md shadow"
@@ -66,8 +63,8 @@ export default function Detail({
                 <thead class="text-center bg-gray-200">
                     <tr>
                         <th class="p-2 border-r border-gray-100">日付</th>
-                        <th class="p-2 border-r border-gray-100">開始時間</th>
-                        <th class="p-2 border-r border-gray-100">終了時間</th>
+                        <th class="p-2 border-r border-gray-100">開始</th>
+                        <th class="p-2 border-r border-gray-100">終了</th>
                         <th class="p-2">合計</th>
                     </tr>
                 </thead>
