@@ -6,12 +6,11 @@ import { SearchBox } from "../components/SearchBox.tsx";
 import { SortSelect } from "../components/SortSelect.tsx";
 
 interface GetHoursResponse {
-  hoursByName: {
-    [key: string]: {
-      totalHours: number;
-      calendarUniqueId: string;
-    };
-  };
+  hoursByName: Array<{
+    name: string;
+    totalHours: number;
+    calendarUniqueId: string;
+  }>;
   updateDate: { [key: string]: string };
   error?: string;
 }
@@ -20,7 +19,6 @@ type SortOption = "name" | "calendar" | "hours";
 
 const formatUpdateDate = (dateString: string) => {
   const date = new Date(dateString);
-  const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, "0");
   const day = date.getDate().toString().padStart(2, "0");
   const hours = date.getHours().toString().padStart(2, "0");
@@ -31,18 +29,26 @@ const formatUpdateDate = (dateString: string) => {
 
 export function List() {
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().getMonth() + 1,
+  );
   const [selectedCalendars, setSelectedCalendars] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [hoursByName, setHoursByName] = useState<
-    { [key: string]: { totalHours: number; calendarUniqueId: string } }
-  >({});
+    Array<{
+      name: string;
+      totalHours: number;
+      calendarUniqueId: string;
+    }>
+  >([]);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [sortOption, setSortOption] = useState<SortOption>("name");
   const [searchTerm, setSearchTerm] = useState("");
-  const [updateDate, setUpdateDate] = useState<{ [key: string]: string }>({});
+  const [updateDate, setUpdateDate] = useState<{ [key: string]: string }>(
+    {},
+  );
 
   useEffect(() => {
     const fetchCalendars = async () => {
@@ -91,8 +97,13 @@ export function List() {
 
       const url = new URL("/api/getHours", window.location.origin);
       url.searchParams.set("month", String(selectedMonth));
-      url.searchParams.set("calendar_unique_ids", calendarsToFetch.join(","));
-      const response = await fetch(url.toString(), { credentials: "include" });
+      url.searchParams.set(
+        "calendar_unique_ids",
+        calendarsToFetch.join(","),
+      );
+      const response = await fetch(url.toString(), {
+        credentials: "include",
+      });
 
       if (!response.ok) {
         throw new Error(
@@ -102,9 +113,11 @@ export function List() {
 
       const data: GetHoursResponse = await response.json();
       console.log("data", data);
+
       setHoursByName(data.hoursByName);
+
       setTotal(
-        Object.values(data.hoursByName).reduce(
+        data.hoursByName.reduce(
           (sum, entry) => sum + entry.totalHours,
           0,
         ),
@@ -112,7 +125,7 @@ export function List() {
       setUpdateDate(data.updateDate);
     } catch (error: any) {
       console.error("Error fetching total hours:", error);
-      setHoursByName({});
+      setHoursByName([]);
       setTotal(0);
       setError(error.message || "データがありません");
     } finally {
@@ -133,18 +146,27 @@ export function List() {
   };
 
   const filteredAndSortedEntries = useMemo(() => {
-    return Object.entries(hoursByName)
-      .filter(([name]) => name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .sort(([nameA, dataA], [nameB, dataB]) => {
+    return hoursByName
+      .filter((data) => {
+        // カレンダーのフィルタリング
+        const calendarFilter = selectedCalendars.length === 0 ||
+          selectedCalendars.includes(data.calendarUniqueId);
+        // 名前のフィルタリング
+        const nameFilter = data.name.toLowerCase().includes(
+          searchTerm.toLowerCase(),
+        );
+        return calendarFilter && nameFilter;
+      })
+      .sort((dataA, dataB) => {
         switch (sortOption) {
           case "name":
-            return nameA.localeCompare(nameB);
+            return dataA.name.localeCompare(dataB.name);
           case "calendar": {
-            const calendarA = calendars.find((cal) =>
-              cal.uniqueId === dataA.calendarUniqueId
+            const calendarA = calendars.find(
+              (cal) => cal.uniqueId === dataA.calendarUniqueId,
             );
-            const calendarB = calendars.find((cal) =>
-              cal.uniqueId === dataB.calendarUniqueId
+            const calendarB = calendars.find(
+              (cal) => cal.uniqueId === dataB.calendarUniqueId,
             );
             const calendarNameA = calendarA ? calendarA.name : "";
             const calendarNameB = calendarB ? calendarB.name : "";
@@ -156,8 +178,7 @@ export function List() {
             return 0;
         }
       });
-  }, [hoursByName, sortOption, searchTerm, calendars]);
-  console.log(filteredAndSortedEntries);
+  }, [hoursByName, sortOption, searchTerm, calendars, selectedCalendars]);
 
   return (
     <div class="w-full">
@@ -170,7 +191,7 @@ export function List() {
         />
         <div class="w-1/2 text-right">
           <button
-            class=" p-2 bg-white border rounded-lg border-gray-100 shadow hover:bg-gray-50 "
+            class="p-2 bg-white border rounded-lg border-gray-100 shadow hover:bg-gray-50"
             onClick={async () => {
               await fetchTotalHours(true);
               await fetchTotalHours();
@@ -179,19 +200,17 @@ export function List() {
           >
             最新データ取得
           </button>
-          <div class=" w-full "></div>
-          <details class="relative mt-4 z-10 inline-block ">
-            <summary>
-              最新取得時間
-            </summary>
+          <div class="w-full"></div>
+          <details class="relative mt-4 z-10 inline-block">
+            <summary>最新取得時間</summary>
             <ul
               class="absolute text-right bg-white rounded-lg shadow p-1 w-44"
               style="left: -50px;"
             >
               {Object.entries(updateDate).map(
                 ([calendarUniqueId, lastUpdate]) => {
-                  const calendar = calendars.find((cal) =>
-                    cal.uniqueId === calendarUniqueId
+                  const calendar = calendars.find(
+                    (cal) => cal.uniqueId === calendarUniqueId,
                   );
                   return (
                     <li key={calendarUniqueId} class="flex justify-between">
@@ -236,7 +255,9 @@ export function List() {
               onChange={(e) => setSelectedMonth(Number(e.currentTarget.value))}
             >
               {months.map((month) => (
-                <option key={month} value={month}>{month}月</option>
+                <option key={month} value={month}>
+                  {month}月
+                </option>
               ))}
             </select>
           </label>
@@ -283,26 +304,25 @@ export function List() {
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSortedEntries.map(
-                  ([name, { totalHours, calendarUniqueId }]) => {
-                    const employeeCalendar = calendars.find((cal) =>
-                      cal.uniqueId === calendarUniqueId
-                    );
-                    const color = employeeCalendar
-                      ? employeeCalendar.color
-                      : "black";
-                    return (
-                      <TableTr
-                        key={name}
-                        name={name}
-                        totalHours={totalHours}
-                        selectedMonth={selectedMonth}
-                        color={color}
-                        calendarUniqueId={calendarUniqueId}
-                      />
-                    );
-                  },
-                )}
+                {filteredAndSortedEntries.map((entry, index) => {
+                  const { name, totalHours, calendarUniqueId } = entry;
+                  const employeeCalendar = calendars.find(
+                    (cal) => cal.uniqueId === calendarUniqueId,
+                  );
+                  const color = employeeCalendar
+                    ? employeeCalendar.color
+                    : "black";
+                  return (
+                    <TableTr
+                      key={`${name}_${calendarUniqueId}_${index}`}
+                      name={name}
+                      totalHours={totalHours}
+                      selectedMonth={selectedMonth}
+                      color={color}
+                      calendarUniqueId={calendarUniqueId}
+                    />
+                  );
+                })}
                 <tr class="text-center bg-gray-100">
                   <td class="p-2 border-r border-gray-100 rounded-bl-xl w-1/2">
                     合計

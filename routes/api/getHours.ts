@@ -2,14 +2,13 @@
 import { supabase } from "../../lib/supabase.ts";
 
 interface EmployeeHourDetail {
+  name: string; // 名前を追加
   totalHours: number;
-  calendarUniqueId: string; // カレンダーIDを追加
+  calendarUniqueId: string;
 }
 
 interface GetHoursResponse {
-  hoursByName: {
-    [key: string]: EmployeeHourDetail;
-  };
+  hoursByName: EmployeeHourDetail[]; // 配列に変更
   updateDate: { [key: string]: string };
   error?: string;
 }
@@ -71,19 +70,16 @@ export const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const hoursByName: { [key: string]: EmployeeHourDetail } = {};
+    const hoursByName: EmployeeHourDetail[] = []; // 配列に変更
     const updateDate: { [key: string]: string } = {};
 
     data.forEach((entry: any) => {
-      // 勤務時間の集計
-      if (!hoursByName[entry.name]) {
-        hoursByName[entry.name] = {
-          totalHours: entry.total_hours,
-          calendarUniqueId: entry.calendar_unique_id, // 後で設定
-        };
-      } else {
-        hoursByName[entry.name].totalHours += entry.total_hours;
-      }
+      // 各従業員のデータを配列に追加
+      hoursByName.push({
+        name: entry.name,
+        totalHours: entry.total_hours,
+        calendarUniqueId: entry.calendar_unique_id,
+      });
 
       // 各カレンダーの最新のupdateDateを取得
       const existingDate = updateDate[entry.calendar_unique_id];
