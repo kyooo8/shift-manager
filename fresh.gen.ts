@@ -19,12 +19,13 @@ import * as $api_updateCalendar from "./routes/api/updateCalendar.ts";
 import * as $api_updateData from "./routes/api/updateData.ts";
 import * as $detail_name_ from "./routes/detail/[name].tsx";
 import * as $index from "./routes/index.tsx";
-import * as $list from "./routes/list.tsx";
-import * as $profile from "./routes/profile.tsx";
+import * as $login from "./routes/login.tsx";
+import * as $setting from "./routes/setting.tsx";
+import * as $CalendarSetting from "./islands/CalendarSetting.tsx";
 import * as $Detail from "./islands/Detail.tsx";
+import * as $Header from "./islands/Header.tsx";
 import * as $List from "./islands/List.tsx";
 import * as $Login from "./islands/Login.tsx";
-import * as $UserProfile from "./islands/UserProfile.tsx";
 import { type Manifest } from "$fresh/server.ts";
 
 const manifest = {
@@ -46,14 +47,15 @@ const manifest = {
     "./routes/api/updateData.ts": $api_updateData,
     "./routes/detail/[name].tsx": $detail_name_,
     "./routes/index.tsx": $index,
-    "./routes/list.tsx": $list,
-    "./routes/profile.tsx": $profile,
+    "./routes/login.tsx": $login,
+    "./routes/setting.tsx": $setting,
   },
   islands: {
+    "./islands/CalendarSetting.tsx": $CalendarSetting,
     "./islands/Detail.tsx": $Detail,
+    "./islands/Header.tsx": $Header,
     "./islands/List.tsx": $List,
     "./islands/Login.tsx": $Login,
-    "./islands/UserProfile.tsx": $UserProfile,
   },
   baseUrl: import.meta.url,
 } satisfies Manifest;

@@ -1,12 +1,8 @@
 // routes/api/getCalendars.ts
 import { supabase } from "../../lib/supabase.ts";
-import { FreshContext } from "$fresh/server.ts";
 import { Calendar } from "../../interface/Calendar.ts";
 
-export const handler = async (
-    req: Request,
-    _ctx: FreshContext,
-): Promise<Response> => {
+export const handler = async (req: Request): Promise<Response> => {
     const cookieHeader = req.headers.get("Cookie") || "";
     const cookies = Object.fromEntries(
         cookieHeader.split("; ").map((c) => {
@@ -27,7 +23,15 @@ export const handler = async (
             throw error;
         }
 
-        const calendars: Calendar[] = data.calendars;
+        const calendars: Calendar[] = (data.calendars || []).map((
+            cal: any,
+        ) => ({
+            uniqueId: cal.uniqueId,
+            name: cal.name,
+            color: cal.color,
+        }));
+
+        console.log(calendars);
 
         return new Response(JSON.stringify(calendars), {
             status: 200,

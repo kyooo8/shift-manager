@@ -1,9 +1,9 @@
 // colors.ts
 export const COLOR_OPTIONS = [
-    { label: "白", value: "#FFFFFF" },
-    { label: "赤", value: "#FF5733" },
-    { label: "青", value: "#3498DB" },
-    { label: "緑", value: "#2ECC71" },
-    { label: "黄", value: "#F1C40F" },
-    { label: "紫", value: "#9B59B6" },
+    { label: "オレンジ", value: "#F09300" },
+    { label: "レッド", value: "#D50000" },
+    { label: "ブルー", value: "#039BE5" },
+    { label: "グリーン", value: "#7CB342" },
+    { label: "黒", value: "#616161" },
+    { label: "パープル", value: "#B39DDB" },
 ];

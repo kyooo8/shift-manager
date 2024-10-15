@@ -1,4 +1,4 @@
-//islands/Detail
+// islands/Detail
 import DetailProps from "../interface/DetailProps.ts";
 
 export default function Detail({
@@ -22,7 +22,12 @@ export default function Detail({
                 .getDate()
                 .toString()
                 .padStart(2, "0")
-        } ${date.getHours().toString().padStart(2, "0")}:${
+        }`;
+    };
+
+    const formatTime = (dateString: string) => {
+        const date = new Date(dateString);
+        return `${date.getHours().toString().padStart(2, "0")}:${
             date
                 .getMinutes()
                 .toString()
@@ -60,9 +65,10 @@ export default function Detail({
             <table class="mx-auto mt-8 rounded-xl overflow-hidden ring-1 ring-gray-100 shadow-lg bg-white w-2/3">
                 <thead class="text-center bg-gray-200">
                     <tr>
+                        <th class="p-2 border-r border-gray-100">日付</th>
                         <th class="p-2 border-r border-gray-100">開始時間</th>
                         <th class="p-2 border-r border-gray-100">終了時間</th>
-                        <th class="p-2">勤務時間</th>
+                        <th class="p-2">合計</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,7 +78,10 @@ export default function Detail({
                                 {formatDate(shift.start)}
                             </td>
                             <td class="p-2 border-r border-gray-100">
-                                {formatDate(shift.end)}
+                                {formatTime(shift.start)}
+                            </td>
+                            <td class="p-2 border-r border-gray-100">
+                                {formatTime(shift.end)}
                             </td>
                             <td class="p-2">{shift.hours}時間</td>
                         </tr>
@@ -81,6 +90,7 @@ export default function Detail({
                         <td class="p-2 border-r border-gray-100 font-bold">
                             合計
                         </td>
+                        <td class="p-2"></td>
                         <td class="p-2"></td>
                         <td class="p-2 font-bold">{totalHours}時間</td>
                     </tr>
