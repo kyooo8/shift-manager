@@ -36,8 +36,8 @@ export default function Detail({
     };
 
     return (
-        <div class="w-full mx-3">
-            <div class="flex justify-between mt-8 w-2/3 mx-auto">
+        <div class="w-full">
+            <div class="flex justify-between items-end mt-8 w-2/3 mx-auto">
                 <button
                     class="mr-3 p-2 border border-gray-100 rounded-md hover:bg-gray-100 shadow bg-gray-50"
                     onClick={() => history.back()}
@@ -46,7 +46,7 @@ export default function Detail({
                 </button>{" "}
                 <label htmlFor="month">
                     <select
-                        class="bg-gray-50 hover:bg-gray-100 p-2 border border-gray-100 rounded-md shadow"
+                        class="text-lg p-1 rounded-lg"
                         id="month"
                         value={selectedMonth}
                         onChange={handleMonthChange}
@@ -59,7 +59,7 @@ export default function Detail({
                     </select>
                 </label>
             </div>
-            <table class="mx-auto mt-8 rounded-xl overflow-hidden ring-1 ring-gray-100 shadow-lg bg-white w-2/3">
+            <table class="mx-auto mt-4 rounded-xl overflow-hidden ring-1 ring-gray-100 shadow-lg bg-white w-2/3">
                 <thead class="text-center bg-gray-200">
                     <tr>
                         <th class="p-2 border-r border-gray-100">日付</th>
