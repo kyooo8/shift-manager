@@ -64,7 +64,13 @@ export default function CalendarSetting() {
             await getCalendars();
             setSuccessMessage("カレンダーが正常に追加されました。");
             setErrorMessage(null);
-            setTimeout(() => setSuccessMessage(null), 4000); // 3秒後に消える
+            setNewCalendar({
+                uniqueId: "",
+                id: "",
+                name: "",
+                color: COLOR_OPTIONS[0].value,
+            });
+            setTimeout(() => setSuccessMessage(null), 4000);
         } catch (error) {
             console.error("カレンダーの追加中にエラーが発生しました:", error);
             setErrorMessage("カレンダーの追加に失敗しました。");
