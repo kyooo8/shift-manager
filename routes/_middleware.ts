@@ -1,11 +1,9 @@
-// routes/_middleware.ts
-import { MiddlewareHandlerContext } from "$fresh/server.ts";
+import { FreshContext } from "$fresh/server.ts";
 import { verifyAccessToken } from "../lib/verifyAccessToken.ts";
 
-export async function handler(req: Request, ctx: MiddlewareHandlerContext) {
+export async function handler(req: Request, ctx: FreshContext) {
   const url = new URL(req.url);
 
-  // ログインページや静的ファイルのリクエストは認証をスキップ
   if (
     url.pathname === "/login" || url.pathname === "/api/login" ||
     url.pathname === "/api/callback" ||
@@ -25,6 +23,7 @@ export async function handler(req: Request, ctx: MiddlewareHandlerContext) {
   );
 
   let accessToken = cookies.accessToken;
+  console.log("accessToken", accessToken);
 
   if (!accessToken) {
     return new Response(null, {
@@ -36,29 +35,48 @@ export async function handler(req: Request, ctx: MiddlewareHandlerContext) {
   const isValid = await verifyAccessToken(accessToken);
 
   if (!isValid) {
-    // アクセストークンをリフレッシュ
-    const refreshResponse = await fetch(
-      "http://localhost:8000/api/refreshAccessToken",
-      {
-        method: "POST",
-        headers: {
-          Cookie: cookieHeader,
-        },
-      },
-    );
+    // 環境変数からAPIのURLを取得
+    const API_URL = Deno.env.get("API_URL") || "http://localhost:8000";
 
+    // アクセストークンをリフレッシュ
+    const refreshResponse = await fetch(`${API_URL}/api/refreshAccessToken`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: cookieHeader,
+      },
+      credentials: "include",
+    });
+
+    // 失敗した場合、ログイン画面にリダイレクト
     if (!refreshResponse.ok) {
       return new Response(null, {
         status: 302,
-        headers: { Location: "/" },
+        headers: { Location: "/login" },
       });
     }
 
-    // 新しいアクセストークンを取得
+    // `Set-Cookie` ヘッダーから新しい `accessToken` を取得
     const newCookies = refreshResponse.headers.get("set-cookie");
     if (newCookies) {
       accessToken = newCookies.match(/accessToken=([^;]+)/)?.[1] || "";
     }
+
+    // トークンがない場合はログイン画面へ
+    if (!accessToken) {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: "/login" },
+      });
+    }
+
+    // クライアントに新しい `accessToken` をセット
+    const response = await ctx.next();
+    response.headers.append(
+      "Set-Cookie",
+      `accessToken=${accessToken}; Path=/; HttpOnly; Secure; SameSite=Lax`,
+    );
+    return response;
   }
 
   return await ctx.next();

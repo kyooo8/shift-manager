@@ -57,6 +57,8 @@ export async function handler(req: Request): Promise<Response> {
       `accessToken=${newAccessToken}; Path=/; HttpOnly; SameSite=Lax;`,
     );
 
+    console.log("アクセストークンを更新しました");
+
     return new Response(
       JSON.stringify({ message: "アクセストークンを更新しました" }),
       {
