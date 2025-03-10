@@ -135,6 +135,7 @@ export function List() {
 
   useEffect(() => {
     fetchTotalHours();
+    console.log(hoursByName);
   }, [selectedMonth, selectedCalendars, calendars]);
 
   const handleCalendarSelection = (calendarUniqueId: string) => {
@@ -148,10 +149,8 @@ export function List() {
   const filteredAndSortedEntries = useMemo(() => {
     return hoursByName
       .filter((data) => {
-        // カレンダーのフィルタリング
         const calendarFilter = selectedCalendars.length === 0 ||
           selectedCalendars.includes(data.calendarUniqueId);
-        // 名前のフィルタリング
         const nameFilter = data.name.toLowerCase().includes(
           searchTerm.toLowerCase(),
         );

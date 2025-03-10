@@ -1,31 +1,31 @@
-import { supabase } from "./supabase.ts";
-
 export async function mapUniqueIdsToCalendarIds(
-    uniqueIds: string[],
-    userId: string,
+  uniqueIds: string[],
+  userId: string,
 ): Promise<{ [uniqueId: string]: string }> {
-    const { data, error } = await supabase
-        .from("users")
-        .select("calendars")
-        .eq("id", userId)
-        .single();
+  const kv = await Deno.openKv();
 
-    if (error || !data) {
-        throw new Error("カレンダー情報の取得に失敗しました");
+  // ユーザー情報をDeno KVから取得
+  const userKey = ["users", userId];
+  const user = await kv.get<{ calendars: { uniqueId: string; id: string }[] }>(
+    userKey,
+  );
+
+  if (!user.value || !user.value.calendars) {
+    throw new Error("カレンダー情報の取得に失敗しました");
+  }
+
+  console.log("Fetched user data from Deno KV:", user.value);
+
+  const calendars = user.value.calendars;
+  const idMap: { [uniqueId: string]: string } = {};
+
+  // uniqueIdをkeyに、対応するcalendarIdをマッピング
+  uniqueIds.forEach((uniqueId) => {
+    const calendar = calendars.find((cal) => cal.uniqueId === uniqueId);
+    if (calendar) {
+      idMap[uniqueId] = calendar.id;
     }
-    console.log("data", data);
+  });
 
-    const calendars = data.calendars || [];
-    const idMap: { [uniqueId: string]: string } = {};
-
-    uniqueIds.forEach((uniqueId) => {
-        const calendar = calendars.find((cal: any) =>
-            cal.uniqueId === uniqueId
-        );
-        if (calendar) {
-            idMap[uniqueId] = calendar.id;
-        }
-    });
-
-    return idMap;
+  return idMap;
 }

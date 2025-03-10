@@ -1,66 +1,79 @@
-//detail/[name]
+// detail/[name]
+
 import { Handlers, PageProps } from "$fresh/server.ts";
 import Detail from "../../islands/Detail.tsx";
-import { supabase } from "../../lib/supabase.ts";
 import { Header } from "../../components/header.tsx";
 
 export const handler: Handlers = {
-    async GET(req, ctx) {
-        const { name } = ctx.params;
-        const decodedName = decodeURIComponent(name);
-        const url = new URL(req.url);
-        const month = url.searchParams.get("month") ||
-            String(new Date().getMonth() + 1);
-        const calendarUniqueId = url.searchParams.get("calendar_unique_id");
-        if (!calendarUniqueId) {
-            return ctx.render({
-                error: "カレンダーIDが指定されていません",
-            });
-        }
-        const year = new Date().getFullYear();
-        const monthInt = Number(month);
+  async GET(req, ctx) {
+    const { name } = ctx.params;
+    const decodedName = decodeURIComponent(name);
+    const url = new URL(req.url);
+    const month = url.searchParams.get("month") ||
+      String(new Date().getMonth() + 1);
+    const calendarUniqueId = url.searchParams.get("calendar_unique_id");
 
-        const docId = `${year}-${monthInt}-${calendarUniqueId}-${decodedName}`;
-        console.log(docId);
+    if (!calendarUniqueId) {
+      return ctx.render({
+        error: "カレンダーIDが指定されていません",
+      });
+    }
 
-        const { data, error } = await supabase.from("employee_hours").select(
-            "details,total_hours",
-        ).eq("id", docId).maybeSingle();
+    const year = new Date().getFullYear();
+    const monthInt = Number(month);
 
-        if (error || !data) {
-            console.log("Error fetching user details:", error);
-            return ctx.render({
-                error: "ユーザーの詳細情報の取得に失敗しました",
-            });
-        }
+    try {
+      const kv = await Deno.openKv();
 
+      // Deno KVからデータを取得
+      const data = await kv.get<{ details: any; total_hours: number }>([
+        "employee_hours",
+        year,
+        monthInt,
+        calendarUniqueId,
+        decodedName,
+      ]);
+
+      if (!data.value) {
+        console.error("No data found for docId:", decodedName);
         return ctx.render({
-            name,
-            details: data.details,
-            totalHours: data.total_hours,
-            selectedMonth: Number(month),
+          error: "ユーザーの詳細情報の取得に失敗しました",
         });
-    },
+      }
+
+      return ctx.render({
+        name,
+        details: data.value.details,
+        totalHours: data.value.total_hours,
+        selectedMonth: Number(month),
+      });
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+      return ctx.render({
+        error: "ユーザーの詳細情報の取得中にエラーが発生しました",
+      });
+    }
+  },
 };
 
 export default function DetailPage(props: PageProps) {
-    const { name, details, totalHours, selectedMonth, error } = props.data;
+  const { name, details, totalHours, selectedMonth, error } = props.data;
 
-    if (error) {
-        return <p>{error}</p>;
-    }
+  if (error) {
+    return <p>{error}</p>;
+  }
 
-    const decodedName = decodeURIComponent(name);
+  const decodedName = decodeURIComponent(name);
 
-    return (
-        <>
-            <Header title={decodedName} />
-            <Detail
-                name={name}
-                details={details}
-                totalHours={totalHours}
-                selectedMonth={selectedMonth}
-            />
-        </>
-    );
+  return (
+    <>
+      <Header title={decodedName} />
+      <Detail
+        name={name}
+        details={details}
+        totalHours={totalHours}
+        selectedMonth={selectedMonth}
+      />
+    </>
+  );
 }

@@ -1,14 +1,13 @@
 // routes/api/getHours.ts
-import { supabase } from "../../lib/supabase.ts";
 
 interface EmployeeHourDetail {
-  name: string; // 名前を追加
+  name: string;
   totalHours: number;
   calendarUniqueId: string;
 }
 
 interface GetHoursResponse {
-  hoursByName: EmployeeHourDetail[]; // 配列に変更
+  hoursByName: EmployeeHourDetail[];
   updateDate: { [key: string]: string };
   error?: string;
 }
@@ -56,39 +55,48 @@ export const handler = async (req: Request): Promise<Response> => {
 
     const year = new Date().getFullYear();
 
-    // データベースから該当する従業員のデータを取得
-    const { data, error } = await supabase
-      .from("employee_hours")
-      .select("*")
-      .eq("year", year)
-      .eq("month", parseInt(month))
-      .in("calendar_unique_id", calendarUniqueIds);
+    const kv = await Deno.openKv();
 
-    if (error) {
-      throw new Error(
-        `Supabaseからのデータ取得に失敗しました: ${error.message}`,
-      );
-    }
-
-    const hoursByName: EmployeeHourDetail[] = []; // 配列に変更
+    const hoursByName: EmployeeHourDetail[] = [];
     const updateDate: { [key: string]: string } = {};
 
-    data.forEach((entry: any) => {
-      // 各従業員のデータを配列に追加
-      hoursByName.push({
-        name: entry.name,
-        totalHours: entry.total_hours,
-        calendarUniqueId: entry.calendar_unique_id,
-      });
+    // 各カレンダーIDに対してデータを取得
+    for (const calendarUniqueId of calendarUniqueIds) {
+      const prefix = [
+        "employee_hours",
+        year,
+        parseInt(month),
+        calendarUniqueId,
+      ];
 
-      // 各カレンダーの最新のupdateDateを取得
-      const existingDate = updateDate[entry.calendar_unique_id];
-      if (
-        !existingDate || new Date(entry.update_date) > new Date(existingDate)
-      ) {
-        updateDate[entry.calendar_unique_id] = entry.update_date;
+      const iterator = kv.list({ prefix });
+
+      // for await (const entry of iterator) {
+      //   console.log("Found entry:", entry.key, entry.value);
+      // }
+
+      for await (const entry of iterator) {
+        const data = entry.value as {
+          name: string;
+          total_hours: number;
+          update_date: string;
+          calendar_unique_id: string;
+        };
+
+        hoursByName.push({
+          name: data.name,
+          totalHours: data.total_hours,
+          calendarUniqueId: data.calendar_unique_id,
+        });
+
+        const existingDate = updateDate[data.calendar_unique_id];
+        if (
+          !existingDate || new Date(data.update_date) > new Date(existingDate)
+        ) {
+          updateDate[data.calendar_unique_id] = data.update_date;
+        }
       }
-    });
+    }
 
     const response: GetHoursResponse = {
       hoursByName,

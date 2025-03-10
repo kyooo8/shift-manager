@@ -1,10 +1,6 @@
-// routes/api/shifts.ts
-import { supabase } from "../../lib/supabase.ts";
-import { getTotalHours } from "../../lib/googleCalendar.ts";
-import { EmployeeHourDetail } from "../../lib/googleCalendar.ts";
 import { verifyAccessToken } from "../../lib/verifyAccessToken.ts";
-
 import { mapUniqueIdsToCalendarIds } from "../../lib/calendarUtils.ts";
+import { getTotalHours } from "../../lib/googleCalendar.ts";
 
 export const handler = async (req: Request): Promise<Response> => {
   try {
@@ -16,8 +12,6 @@ export const handler = async (req: Request): Promise<Response> => {
     }
 
     const { month, calendar_unique_ids } = await req.json();
-    console.log("Received calendar_unique_ids:", calendar_unique_ids); // 追加
-
     const calendarUniqueIds: string[] = calendar_unique_ids;
 
     // 月のバリデーション
@@ -46,7 +40,7 @@ export const handler = async (req: Request): Promise<Response> => {
 
     const year = new Date().getFullYear();
     const timeMin = new Date(year, monthInt - 1, 1).toISOString();
-    const timeMax = new Date(year, monthInt, 1).toISOString(); // 次の月の開始日
+    const timeMax = new Date(year, monthInt, 1).toISOString();
 
     const cookieHeader = req.headers.get("Cookie") || "";
     const cookies = Object.fromEntries(
@@ -58,7 +52,6 @@ export const handler = async (req: Request): Promise<Response> => {
 
     let accessToken = cookies.accessToken;
     const userId = cookies.googleUserId;
-    console.log("User ID:", userId); // 追加
     if (!accessToken) {
       return new Response(null, {
         status: 302,
@@ -66,11 +59,9 @@ export const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // アクセストークンの検証とリフレッシュは省略（既存のコードを使用）
+    // アクセストークンの検証とリフレッシュ
     const isValid = await verifyAccessToken(accessToken);
-
     if (!isValid) {
-      // アクセストークンをリフレッシュ
       const refreshResponse = await fetch(
         "http://localhost:8000/api/refreshAccessToken",
         {
@@ -79,19 +70,17 @@ export const handler = async (req: Request): Promise<Response> => {
             Cookie: cookieHeader,
           },
         },
-      ); // 新しいアクセストークンを取得
+      );
       const newCookies = refreshResponse.headers.get("set-cookie");
       if (newCookies) {
         accessToken = newCookies.match(/accessToken=([^;]+)/)?.[1] || "";
       }
     }
+
     // uniqueIdからcalendarIdへのマッピングを取得
     const idMap = await mapUniqueIdsToCalendarIds(calendarUniqueIds, userId);
     const calendarIds = calendarUniqueIds.map((uniqueId) => idMap[uniqueId]);
 
-    console.log("calendarIds:", calendarIds);
-    console.log("idmap:", idMap);
-    // カレンダーごとに勤務時間を取得
     const fetchPromises = calendarIds.map((calendarId: string) =>
       getTotalHours(
         accessToken,
@@ -102,49 +91,53 @@ export const handler = async (req: Request): Promise<Response> => {
     );
     const hoursByCalendarsArray = await Promise.all(fetchPromises);
 
-    // 新しくアップサートしたデータのIDと更新日時を記録
+    const kv = await Deno.openKv();
+
+    // 新しくアップサートしたデータのIDを記録
     const updatedIds: string[] = [];
 
-    // Supabaseにデータを保存
-    const upsertPromises = hoursByCalendarsArray.map(
-      async (
-        hoursByName: { [name: string]: EmployeeHourDetail },
-        index: number,
-      ) => {
-        const calendarUniqueId = calendarUniqueIds[index];
-        const insertData = Object.entries(hoursByName).map(([
+    // Deno KVにデータを保存
+    for (const [index, hoursByName] of hoursByCalendarsArray.entries()) {
+      const calendarUniqueId = calendarUniqueIds[index];
+
+      for (
+        const [name, { totalHours, details }] of Object.entries(
+          hoursByName,
+        )
+      ) {
+        const key = [
+          "employee_hours",
+          year,
+          monthInt,
+          calendarUniqueId,
           name,
-          { totalHours, details },
-        ]) => {
-          const id = `${year}-${monthInt}-${calendarUniqueId}-${name}`;
-          updatedIds.push(id); // アップサート対象のIDを記録
-          return {
-            id,
-            name,
-            total_hours: totalHours,
-            update_date: new Date().toISOString(),
-            calendar_unique_id: calendarUniqueId,
-            year,
-            month: monthInt,
-            details, // JSON形式の詳細情報を追加
-          };
+        ];
+        const id = `${year}-${monthInt}-${calendarUniqueId}-${name}`;
+        updatedIds.push(id);
+
+        await kv.set(key, {
+          name,
+          total_hours: totalHours,
+          update_date: new Date().toISOString(),
+          calendar_unique_id: calendarUniqueId,
+          year,
+          month: monthInt,
+          details,
         });
+      }
+    }
 
-        const { error } = await supabase
-          .from("employee_hours")
-          .upsert(insertData);
+    // 古いデータの削除
+    const iterator = kv.list({ prefix: ["employee_hours", year, monthInt] });
+    for await (const entry of iterator) {
+      const calendarUniqueId = entry.key[3] as string;
+      const name = entry.key[4] as string;
 
-        if (error) {
-          throw new Error(
-            `Supabaseへのデータ保存に失敗しました: ${error.message}`,
-          );
-        }
-      },
-    );
-
-    await Promise.all(upsertPromises);
-
-    // 古いデータの削除（既存のコードを使用）
+      const id = `${year}-${monthInt}-${calendarUniqueId}-${name}`;
+      if (!updatedIds.includes(id)) {
+        await kv.delete(entry.key);
+      }
+    }
 
     return new Response(
       JSON.stringify({

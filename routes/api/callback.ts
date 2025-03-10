@@ -1,5 +1,4 @@
 // routes/api/callback.ts
-import { supabase } from "../../lib/supabase.ts";
 
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
@@ -37,7 +36,6 @@ export async function handler(req: Request): Promise<Response> {
     });
   }
 
-  // レスポンスをJSONとしてパース
   const tokenData = await tokenResponse.json();
   const accessToken = tokenData.access_token;
   const refreshToken = tokenData.refresh_token;
@@ -73,20 +71,19 @@ export async function handler(req: Request): Promise<Response> {
   const userInfo = await userInfoResponse.json();
   const googleUserId = userInfo.sub; // OpenID Connect では "sub" がユーザーID
 
-  // ユーザーの存在を確認
-  const { data: existingUser, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", googleUserId)
-    .single();
+  // Deno KVに保存
+  const kv = await Deno.openKv();
 
-  if (!existingUser) {
+  const userKey = ["users", googleUserId];
+  const existingUser = await kv.get<User>(userKey);
+
+  if (!existingUser.value) {
     // 新規ユーザーを登録
-    await saveUser(googleUserId, userInfo);
+    await saveUser(kv, googleUserId, userInfo);
   }
 
   // リフレッシュトークンを保存または更新
-  await saveRefreshToken(googleUserId, refreshToken);
+  await saveRefreshToken(kv, googleUserId, refreshToken);
 
   // クッキーにアクセストークンとユーザーIDを設定
   const headers = new Headers();
@@ -107,26 +104,39 @@ export async function handler(req: Request): Promise<Response> {
   });
 }
 
-// ユーザーをデータベースに保存する関数
-async function saveUser(googleUserId: string, userInfo: any) {
-  const { error } = await supabase.from("users").insert({
+// ユーザー型の定義
+interface User {
+  id: string;
+  name: string;
+  refresh_token?: string; // オプショナルに設定
+}
+
+// ユーザーをDeno KVに保存する関数
+async function saveUser(kv: Deno.Kv, googleUserId: string, userInfo: any) {
+  console.log("username", userInfo.name);
+
+  const userKey = ["users", googleUserId];
+  await kv.set(userKey, {
     id: googleUserId,
     name: userInfo.name,
   });
-
-  if (error) {
-    console.error("ユーザーの作成に失敗しました:", error);
-  }
+  console.log("新規ユーザーが登録されました:", googleUserId);
 }
 
-// リフレッシュトークンを保存または更新する関数
-async function saveRefreshToken(googleUserId: string, refreshToken: string) {
-  const { error } = await supabase
-    .from("users")
-    .update({ refresh_token: refreshToken })
-    .eq("id", googleUserId);
+// リフレッシュトークンをDeno KVに保存または更新する関数
+async function saveRefreshToken(
+  kv: Deno.Kv,
+  googleUserId: string,
+  refreshToken: string,
+) {
+  const userKey = ["users", googleUserId];
+  const user = await kv.get<User>(userKey);
 
-  if (error) {
-    console.error("リフレッシュトークンの保存に失敗しました:", error);
+  if (user.value) {
+    user.value.refresh_token = refreshToken;
+    await kv.set(userKey, user.value);
+    console.log("リフレッシュトークンが更新されました:", googleUserId);
+  } else {
+    console.error("ユーザーが見つかりません:", googleUserId);
   }
 }
