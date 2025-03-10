@@ -63,7 +63,7 @@ export const handler = async (req: Request): Promise<Response> => {
     const isValid = await verifyAccessToken(accessToken);
     if (!isValid) {
       const refreshResponse = await fetch(
-        "http://localhost:8000/api/refreshAccessToken",
+        "https://shift-manager.deno.dev/api/refreshAccessToken",
         {
           method: "POST",
           headers: {

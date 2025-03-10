@@ -2,7 +2,7 @@
 export function handler(req: Request): Response {
   const clientId = Deno.env.get("GOOGLE_CLIENT_ID")!;
   const redirectUrl = Deno.env.get("REDIRECT_URL") ||
-    "http://localhost:8000/api/callback";
+    "https://shift-manager.deno.dev/api/callback";
   const scope = [
     "https://www.googleapis.com/auth/calendar",
     "https://www.googleapis.com/auth/userinfo.profile",

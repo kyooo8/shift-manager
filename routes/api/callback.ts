@@ -11,7 +11,7 @@ export async function handler(req: Request): Promise<Response> {
   const clientId = Deno.env.get("GOOGLE_CLIENT_ID")!;
   const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
   const redirectUri = Deno.env.get("REDIRECT_URL") ||
-    "http://localhost:8000/api/callback";
+    "https://shift-manager.deno.dev/api/callback";
 
   // トークンを取得
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
