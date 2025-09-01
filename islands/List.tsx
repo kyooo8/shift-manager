@@ -53,12 +53,13 @@ export function List() {
   useEffect(() => {
     const fetchCalendars = async () => {
       try {
-        const response = await fetch("/api/getCalendars", {
+        const response = await fetch("/api/calendar/get", {
+          method: "GET",
           credentials: "include",
         });
         if (!response.ok) throw new Error(`Error: ${response.status}`);
-        const calendarsArray: Calendar[] = await response.json();
-        setCalendars(calendarsArray);
+        const calendarsArray = await response.json();
+        setCalendars(calendarsArray.calendars);
       } catch (error) {
         console.error("カレンダーの取得中にエラーが発生しました:", error);
         setError("カレンダーの取得に失敗しました。");
@@ -79,9 +80,8 @@ export function List() {
         : calendars.map((calendar) => calendar.uniqueId);
 
       if (update) {
-        const response = await fetch("/api/shifts", {
+        const response = await fetch("/api/shift/acquire", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             month: selectedMonth,
             calendar_unique_ids: calendarsToFetch,
@@ -95,7 +95,7 @@ export function List() {
         }
       }
 
-      const url = new URL("/api/getHours", window.location.origin);
+      const url = new URL("/api/shift/getHours", globalThis.location.origin);
       url.searchParams.set("month", String(selectedMonth));
       url.searchParams.set(
         "calendar_unique_ids",
@@ -135,7 +135,6 @@ export function List() {
 
   useEffect(() => {
     fetchTotalHours();
-    console.log(hoursByName);
   }, [selectedMonth, selectedCalendars, calendars]);
 
   const handleCalendarSelection = (calendarUniqueId: string) => {

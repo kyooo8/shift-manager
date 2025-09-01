@@ -1,7 +1,7 @@
 // islands/Login.tsx
 export function Login() {
   const handleGoogleLogin = () => {
-    window.location.href = "/api/login";
+    globalThis.location.href = "/api/auth/login";
   };
 
   return (

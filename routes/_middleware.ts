@@ -5,8 +5,8 @@ export async function handler(req: Request, ctx: FreshContext) {
   const url = new URL(req.url);
 
   if (
-    url.pathname === "/login" || url.pathname === "/api/login" ||
-    url.pathname === "/api/callback" ||
+    url.pathname === "/login" || url.pathname === "/api/auth/login" ||
+    url.pathname === "/api/auth/callback" ||
     url.pathname.startsWith("/static") || // 静的ファイルをスキップ
     url.pathname.endsWith(".js") || // JavaScriptファイルをスキップ
     url.pathname.endsWith(".css") // CSSファイルをスキップ
@@ -23,7 +23,6 @@ export async function handler(req: Request, ctx: FreshContext) {
   );
 
   let accessToken = cookies.accessToken;
-  console.log("accessToken", accessToken);
 
   if (!accessToken) {
     return new Response(null, {

@@ -1,17 +1,45 @@
-// routes/api/callback.ts
+import { Hono } from "hono";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import { Calendar } from "../../interface/Calendar.ts";
 
-export async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
+const APP_URL = Deno.env.get("URL") || "http://localhost:8000";
+const isProduction = APP_URL.startsWith("https://");
+
+interface User {
+  id: string;
+  name: string;
+  refresh_token?: string;
+  calendars?: Calendar[];
+}
+
+const auth = new Hono();
+
+auth.get("/login", (c) => {
+  const clientId = Deno.env.get("GOOGLE_CLIENT_ID")!;
+  const redirectUrl = `${APP_URL}/api/auth/callback`;
+  const scope = [
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/userinfo.profile",
+    "https://www.googleapis.com/auth/userinfo.email",
+  ].join(" ");
+
+  const authUrl =
+    `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&redirect_uri=${redirectUrl}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
+
+  return c.redirect(authUrl, 302);
+});
+
+auth.get("/callback", async (c) => {
+  const url = new URL(c.req.url);
   const code = url.searchParams.get("code");
 
   if (!code) {
-    return new Response("認証コードが見つかりません", { status: 400 });
+    return c.json({ error: "認証コードが見つかりません" }, 400);
   }
 
   const clientId = Deno.env.get("GOOGLE_CLIENT_ID")!;
   const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET")!;
-  const redirectUri = Deno.env.get("REDIRECT_URL") ||
-    "https://shift-manager.deno.dev/api/callback";
+  const redirectUri = `${APP_URL}/api/auth/callback`;
 
   // トークンを取得
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -31,9 +59,7 @@ export async function handler(req: Request): Promise<Response> {
   if (!tokenResponse.ok) {
     const errorText = await tokenResponse.text();
     console.error("アクセストークンの取得に失敗しました:", errorText);
-    return new Response("アクセストークンの取得に失敗しました", {
-      status: 500,
-    });
+    return c.json({ error: "アクセストークンの取得に失敗しました" }, 500);
   }
 
   const tokenData = await tokenResponse.json();
@@ -45,9 +71,7 @@ export async function handler(req: Request): Promise<Response> {
       "アクセストークンが取得できませんでした。トークンデータ:",
       tokenData,
     );
-    return new Response("アクセストークンが取得できませんでした", {
-      status: 500,
-    });
+    return c.json({ error: "アクセストークンが取得できませんでした" }, 500);
   }
 
   // ユーザー情報を取得
@@ -63,53 +87,66 @@ export async function handler(req: Request): Promise<Response> {
   if (!userInfoResponse.ok) {
     const errorText = await userInfoResponse.text();
     console.error("ユーザー情報の取得に失敗しました:", errorText);
-    return new Response("ユーザー情報の取得に失敗しました", {
-      status: 500,
-    });
+    return c.json({ error: "ユーザー情報の取得に失敗しました" }, 500);
   }
 
   const userInfo = await userInfoResponse.json();
-  const googleUserId = userInfo.sub; // OpenID Connect では "sub" がユーザーID
+  const googleUserId = userInfo.sub;
 
-  // Deno KVに保存
   const kv = await Deno.openKv();
 
   const userKey = ["users", googleUserId];
-  const existingUser = await kv.get<User>(userKey);
+  const existingUser = await kv.get(userKey);
 
   if (!existingUser.value) {
-    // 新規ユーザーを登録
     await saveUser(kv, googleUserId, userInfo);
   }
 
-  // リフレッシュトークンを保存または更新
-  await saveRefreshToken(kv, googleUserId, refreshToken);
+  if (refreshToken) {
+    await saveRefreshToken(kv, googleUserId, refreshToken);
+  }
 
-  // クッキーにアクセストークンとユーザーIDを設定
-  const headers = new Headers();
-  headers.append(
-    "Set-Cookie",
-    `accessToken=${accessToken}; Path=/; HttpOnly; SameSite=Lax;`,
-  );
-  headers.append(
-    "Set-Cookie",
-    `googleUserId=${googleUserId}; Path=/; HttpOnly; SameSite=Lax;`,
-  );
-  headers.append("Location", "/");
-
-  // /listにリダイレクト
-  return new Response(null, {
-    status: 302,
-    headers: headers,
+  setCookie(c, "accessToken", accessToken, {
+    path: "/",
+    secure: isProduction,
+    httpOnly: true,
+    sameSite: "Lax",
   });
-}
+  setCookie(c, "googleUserId", googleUserId, {
+    path: "/",
+    secure: isProduction,
+    httpOnly: true,
+    sameSite: "Lax",
+  });
 
-// ユーザー型の定義
-interface User {
-  id: string;
-  name: string;
-  refresh_token?: string; // オプショナルに設定
-}
+  return c.redirect("/");
+});
+
+auth.get("/logout", (c) => {
+  deleteCookie(c, "accessToken", { path: "/", secure: true });
+  deleteCookie(c, "googleUserId", { path: "/", secure: true });
+
+  return c.redirect("/login");
+});
+
+auth.get("/getUserName", async (c) => {
+  const googleUserId = getCookie(c, "googleUserId");
+  if (!googleUserId) {
+    return c.json({ error: "ログインしていません" }, 401);
+  }
+
+  const kv = await Deno.openKv();
+  const userKey = ["users", googleUserId];
+  const user = await kv.get<User>(userKey);
+
+  if (user.value) {
+    return c.json({ name: user.value.name });
+  } else {
+    return c.json({ error: "ユーザーが見つかりません" }, 404);
+  }
+});
+
+export default auth;
 
 // ユーザーをDeno KVに保存する関数
 async function saveUser(kv: Deno.Kv, googleUserId: string, userInfo: any) {
@@ -122,7 +159,6 @@ async function saveUser(kv: Deno.Kv, googleUserId: string, userInfo: any) {
   });
   console.log("新規ユーザーが登録されました:", googleUserId);
 }
-
 // リフレッシュトークンをDeno KVに保存または更新する関数
 async function saveRefreshToken(
   kv: Deno.Kv,
